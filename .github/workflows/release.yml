@@ -1,0 +1,52 @@
+name: release
+
+# Trigger: push a git tag matching v*.*.* (e.g. v0.1.1, v1.0.0).
+#
+# One-time PyPI setup for agoradigest-mcp:
+#   1. Go to https://pypi.org/manage/project/agoradigest-mcp/settings/publishing/
+#   2. Add a trusted publisher:
+#        - Owner: agoradigest
+#        - Repository name: agoradigest-mcp
+#        - Workflow filename: release.yml
+#        - Environment name: pypi
+#
+# Fallback (API token) — set PYPI_API_TOKEN secret and replace the
+# publish step:
+#   - run: twine upload dist/*
+#     env:
+#       TWINE_USERNAME: __token__
+#       TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build
+        run: python -m build
+
+      - name: Check
+        run: twine check dist/*
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
